@@ -55,13 +55,13 @@ app.get("/states/", async (request, response) => {
       state;`;
   const statesArray = await database.all(getStatesQuery);
   response.send(
-    statesArray.map((eachState) => {
-      convertStateDbObjectToResponseObject(eachState);
-    })
+    statesArray.map((eachState) =>
+      convertStateDbObjectToResponseObject(eachState)
+    )
   );
 });
 
-app.get("/states/:stateId", async (request, response) => {
+app.get("/states/:stateId/", async (request, response) => {
   const { stateId } = request.params;
   const getStateQuery = `
     SELECT
@@ -110,9 +110,9 @@ app.delete("/districts/:districtId/", async (request, response) => {
 });
 
 app.put("/districts/:districtId/", async (request, response) => {
-  const { districtName, stateId, cases, cured, active, deaths } = request.body;
   const { districtId } = request.params;
-  const putQuery = `
+  const { districtName, stateId, cases, cured, active, deaths } = request.body;
+  const updateQuery = `
             UPDATE
               district
             SET
@@ -123,8 +123,9 @@ app.put("/districts/:districtId/", async (request, response) => {
               active = ${active},
               deaths = ${deaths}'
             WHERE 
-              district_id = ${districtId};`;
-  await database.run(putQuery);
+              district_id = ${districtId};
+            `;
+  await database.run(updateQuery);
   response.send("District Details Updated");
 });
 
@@ -132,7 +133,10 @@ app.get("/states/:stateId/stats/", async (request, response) => {
   const { stateId } = request.params;
   const getStateStatsQuery = `
     SELECT
-      COUNT(cases) AS totalCases, COUNT(cured) AS totalCured, COUNT(active) AS totalActive, COUNT(deaths) AS totalDeaths
+      SUM(cases), 
+      SUM(cured), 
+      SUM(active), 
+      SUM(deaths) 
     FROM
       district
     WHERE
@@ -140,8 +144,22 @@ app.get("/states/:stateId/stats/", async (request, response) => {
     GROUP BY
       state_id;`;
   const getSsq = await database.get(getStateStatsQuery);
-  console.log(getSsq);
-  response.send(convertDistrictDbObjectToResponseObject(getSsq));
+  response.send({
+    totalCases: stats["SUM(cases)"],
+    totalCured: stats["SUM(cured)"],
+    totalActive: stats["SUM(active)"],
+    totalDeaths: stats["SUM(deaths)"],
+  });
 });
 
+app.get("/districts/:districtId/details/", async (request, response) => {
+  const { districtId } = request.params;
+  const getDistDetails = `
+    SELECT
+      *
+    FROM
+      district INNER JOIN state ON district.state_id = state.state_id;`;
+  const getDistrict = await database.get(getDistDetails);
+  response.send({ stateName: getDistrict.state_name });
+});
 module.exports = app;
