@@ -27,7 +27,7 @@ const initializeDbAndServer = async () => {
 };
 initializeDbAndServer();
 
-const convertStateDbObjectToResponseObject = async (dbObject) => {
+const convertStateDbObjectToResponseObject = (dbObject) => {
   return {
     stateId: dbObject.state_id,
     stateName: dbObject.state_name,
@@ -35,7 +35,7 @@ const convertStateDbObjectToResponseObject = async (dbObject) => {
   };
 };
 
-const convertDistrictDbObjectToResponseObject = async (dbObject) => {
+const convertDistrictDbObjectToResponseObject = (dbObject) => {
   return {
     districtId: dbObject.district_id,
     districtName: dbObject.district_name,
@@ -116,12 +116,12 @@ app.put("/districts/:districtId/", async (request, response) => {
             UPDATE
               district
             SET
-              district_name = '${districtName},
+              district_name = '${districtName}',
               state_id = ${stateId},
               cases = ${cases},
               cured = ${cured},
               active = ${active},
-              deaths = ${deaths}'
+              deaths = ${deaths}
             WHERE 
               district_id = ${districtId};
             `;
@@ -140,10 +140,8 @@ app.get("/states/:stateId/stats/", async (request, response) => {
     FROM
       district
     WHERE
-      state_id = ${stateId}
-    GROUP BY
-      state_id;`;
-  const getSsq = await database.get(getStateStatsQuery);
+      state_id = ${stateId};`;
+  const stats = await database.get(getStateStatsQuery);
   response.send({
     totalCases: stats["SUM(cases)"],
     totalCured: stats["SUM(cured)"],
